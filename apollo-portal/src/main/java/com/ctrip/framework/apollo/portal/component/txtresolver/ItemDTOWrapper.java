@@ -27,7 +27,7 @@ public class ItemDTOWrapper {
 	/** 配置项对应的原始行文本 */
 	private String line;
 	
-	/** 配置项类型 */
+	/** 配置项类型，详情参考{@link LineTypes} */
 	private int lineType;
 	
 	// ===== ===== ===== ===== [构造方法] ===== ===== ===== ===== //

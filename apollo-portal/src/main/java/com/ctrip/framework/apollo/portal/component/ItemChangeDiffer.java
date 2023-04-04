@@ -49,11 +49,11 @@ public class ItemChangeDiffer {
 	 * @date 2023/4/4 12:28
 	 * @note note
 	 */
-	public ItemChangeSets diffItemChangeSetsForInvoking(
+	public ItemChangeSets diffItemChangeSetsForRevoking(
 			long namespaceId, String format, Map<String, String> releaseItemKeyValue
 			, List<ItemDTO> currBaseItems, List<ItemDTO> currDeletedItems
 	) {
-		// STEP 将当前状态下的所有配置项(尚未提交的新新数据)转换为配置键为Key的Map，方便后续对比
+		// STEP 将当前状态下的所有配置项(尚未提交的新数据)转换为配置键为Key的Map，方便后续对比
 		Collector<ItemDTO, ?, Map<String, ItemDTO>> toMapCollector = Collectors.toMap(ItemDTO::getKey, Function.identity(), (o1, o2) -> o1);
 		Map<String, ItemDTO> currBaseKeyItemMap = Optional.ofNullable(currBaseItems)
 				.orElseGet(ArrayList::new)
@@ -81,7 +81,7 @@ public class ItemChangeDiffer {
 		// STEP 初始化变更集合对象
 		ItemChangeSets changeSets = new ItemChangeSets();
 		
-		// STEP 遍历当前发布的配置值KeyValue(老数据)，与当前状态下所有配置项(尚未提交的新新数据)做对比
+		// STEP 遍历最近一次发布(老数据)的配置值KeyValue，与当前状态下所有配置项(尚未提交的新数据)做对比
 		int seq = 0;
 		for (Map.Entry<String, String> releaseKeyValueEntry : releaseItemKeyValue.entrySet()) {
 			// SUBSTEP 行号自增
@@ -102,7 +102,7 @@ public class ItemChangeDiffer {
 				
 				// PART 获取行号
 				int lineNum = isLineNumUpdatingNeeded ? seq : deletedItemDto.getLineNum(); // NOTE 若需要更新行号，则使用自增序号作为行号，否则使用原始配置项的行号
-				lineNum = (lineNum > 0) ? lineNum : maxLineNum ++; // NOTE 若原始配置项的行号丢失，则将其放到最后一行
+				lineNum = (lineNum > 0) ? lineNum : (++ maxLineNum); // NOTE 若原始配置项的行号丢失，则使用最大行号+1作为行号(就是放到最后一行)
 				
 				// PART 添加一条新增配置项记录
 				changeSets.addCreateItem(buildNormalItem(0L, namespaceId, key, value, deletedItemDto.getComment(), lineNum));

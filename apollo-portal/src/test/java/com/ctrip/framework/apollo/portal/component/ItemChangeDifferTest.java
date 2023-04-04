@@ -462,7 +462,7 @@ public class ItemChangeDifferTest extends AbstractUnitTest {
 	// ===== ===== ===== ===== [实例测试方法] ===== ===== ===== ===== //
 	
 	@Test
-	public void diffItemChangeSetsForInvokingTest01() {
+	public void diffItemChangeSetsForRevokingTest01() {
 		// STEP 声明变量
 		long namespaceId = 24L;
 		String format = ConfigFileFormat.Properties.getValue();
@@ -471,7 +471,7 @@ public class ItemChangeDifferTest extends AbstractUnitTest {
 		List<ItemDTO> currDeletedItems = GSON.fromJson(DELETED_ITEM_LIST_JSON, ITEM_LIST_TYPE);
 		
 		// STEP 执行测试-01-A
-		ItemChangeSets changeSets = differ.diffItemChangeSetsForInvoking(namespaceId, format, releaseItemKeyValue, currBaseItems, currDeletedItems);
+		ItemChangeSets changeSets = differ.diffItemChangeSetsForRevoking(namespaceId, format, releaseItemKeyValue, currBaseItems, currDeletedItems);
 		log.info("测试结果-01-A：{}", changeSets);
 		
 		// STEP 执行测试-01-B

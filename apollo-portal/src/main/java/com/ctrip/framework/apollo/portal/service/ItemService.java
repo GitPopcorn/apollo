@@ -199,7 +199,7 @@ public class ItemService {
     List<ItemDTO> baseItems = itemAPI.findItems(appId, env, clusterName, namespaceName);
     List<ItemDTO> deletedItems = findDeletedItems(appId, env, clusterName, namespaceName);
     
-    ItemChangeSets changeSets = itemChangeDiffer.diffItemChangeSetsForInvoking(
+    ItemChangeSets changeSets = itemChangeDiffer.diffItemChangeSetsForRevoking(
             namespaceId, appNamespace.getFormat(), releaseItemDTOs, baseItems, deletedItems
     );
     

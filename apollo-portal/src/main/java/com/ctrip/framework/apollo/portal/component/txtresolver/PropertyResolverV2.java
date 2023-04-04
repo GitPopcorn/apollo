@@ -35,7 +35,7 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 	
 	@Override
 	public ItemChangeSets resolve(long namespaceId, String configText, List<ItemDTO> baseItems) {
-		// STEP 拆分新文本
+		// STEP 拆分新配置文本为文本行数组
 		String[] newLines = configText.split(ITEM_SEPARATOR);
 		
 		// STEP 解析新文本为配置项封装对象列表，每一行文本都会被解析为一个带类型的配置项封装对象
@@ -48,7 +48,7 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 			
 		}
 		
-		// STEP 新增方法返回值对象：配置项变更信息集合
+		// STEP 创建方法返回对象（配置项变更信息集合）
 		ItemChangeWrapperSets changeWrapperSets = new ItemChangeWrapperSets();
 		
 		// STEP 转化老配置项列表，处理成带封装的新对象列表
@@ -64,7 +64,15 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 	
 	// ===== ===== ===== ===== [操作方法-未分类] ===== ===== ===== ===== //
 	
-	/** 解析多行文本为{@link ItemDTOWrapper}列表 */
+	/**
+	 * 解析多行文本为{@link ItemDTOWrapper}列表
+	 * @param namespaceId 配置项所属的命名空间ID，用于构建{@link ItemDTO}对象
+	 * @param lines 多行文本数组
+	 * @return {@code List<ItemDTOWrapper>} 构筑结果
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	private List<ItemDTOWrapper> parseLines(long namespaceId, String[] lines) {
 		// STEP 校验传入参数
 		List<ItemDTOWrapper> itemDTOWrappers = new ArrayList<>();
@@ -100,7 +108,15 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 		
 	}
 	
-	/** 解析KeyValue */
+	/**
+	 * 解析KeyValue文本行，返回键值对数组
+	 * @param line 文本行
+	 * @param lineNum 行号，仅用于抛出异常时拼装异常信息
+	 * @return {@code String[]} 解析结果，其中{@code kv[0]}为Key，{@code kv[1]}为Value
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	private String[] parseKeyValue(String line, int lineNum) {
 		int kvSeparator = line.indexOf(KV_SEPARATOR);
 		if (kvSeparator == -1) {
@@ -114,10 +130,17 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 		
 	}
 	
-	/** 获取重复的配置Key */
-	private Set<String> getRepeatKeys(List<ItemDTOWrapper> newItemWrapperList) {
+	/**
+	 * 获取重复的配置Key
+	 * @param itemWrapperList 配置项封装对象列表
+	 * @return {@code Set<String>} 获取到的重复Key集合，若没有重复的Key则返回空集合，不会返回{@code null}
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
+	private Set<String> getRepeatKeys(List<ItemDTOWrapper> itemWrapperList) {
 		/*
-		return newItemWrapperList.stream()
+		return itemWrapperList.stream()
 				.filter(item -> item.getLineType() == LineTypes.NORMAL)
 				.map(item -> item.getItemDTO().getKey())
 				.collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
@@ -131,11 +154,11 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 		// NOTE 这里不用Stream API，只用常规的增强for循环以提高效率
 		// STEP 校验传入参数
 		Set<String> repeatKeys = new HashSet<>();
-		if (newItemWrapperList == null) { return repeatKeys; }
+		if (itemWrapperList == null) { return repeatKeys; }
 		
 		// STEP 循环遍历新配置项列表，找出重复的Key
 		Set<String> keys = new HashSet<>();
-		for (ItemDTOWrapper itemWrapper : newItemWrapperList) {
+		for (ItemDTOWrapper itemWrapper : itemWrapperList) {
 			if (itemWrapper == null) { continue; }
 			if (itemWrapper.getLineType() == LineTypes.NORMAL) {
 				String key = itemWrapper.getItemDTO().getKey();
@@ -154,7 +177,16 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 		
 	}
 	
-	/** 对新老配置项进行对比 */
+	/**
+	 * 对新老配置项进行对比，将对比结果封装到{@link ItemChangeWrapperSets}对象中
+	 * @param oldItemWrapperList 老配置项封装对象列表
+	 * @param newItemWrapperList 新配置项封装对象列表
+	 * @param changeWrapperSets 对比结果封装对象
+	 * @return {@code void}
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	private void doCompare(List<ItemDTOWrapper> oldItemWrapperList, List<ItemDTOWrapper> newItemWrapperList, ItemChangeWrapperSets changeWrapperSets) {
 		// STEP 筛选老配置项，移除其中的null值
 		oldItemWrapperList = oldItemWrapperList.stream().filter(ItemDTOWrapper::isItemDTONotNull).collect(Collectors.toList());
@@ -179,7 +211,7 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 			
 			// BRANCH 若新行是配置行
 			if (newItem.getLineType() == LineTypes.NORMAL) {
-				// PART 修改新配置行的注释，清空临时注释列表
+				// PART 将新配置行的注释，修改为临时注释列表里缓存的内容(即配置行上方所有非空连续注释行的内容)，清空临时注释列表
 				newItem.getItemDTO().setComment(String.join("\n", commentsTempList));
 				commentsTempList.clear();
 				
@@ -194,7 +226,7 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 					ItemDTO updateItemDTO = ItemDTOWrapper.clone(newItem.getItemDTO());
 					updateItemDTO.setId(oldItemByKey.getItemDTO().getId());
 					changeWrapperSets.addUpdateItem(new ItemDTOWrapper(updateItemDTO));
-					handledIdSet.add(oldItemByKey.getItemDTO().getId());
+					handledIdSet.add(oldItemByKey.getItemDTO().getId()); // 将已处理的老数据行ID存入集合中
 					
 				// PART 其余情况，添加一条新增记录
 				} else {
@@ -204,12 +236,12 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 				
 			// BRANCH 若新行不是配置行
 			} else {
-				// PART 判断该行是空白行还是注释行
-				// SUB-BRANCH 若为空白行，则清空临时注释列表
+				// PART 判断该行是空白行还是注释行，对临时注释列表执行对应的操作
+				// SUB-BRANCH 若当前行为空白行，则清空临时注释列表
 				if (newItem.getLineType() == LineTypes.BLANK) {
 					commentsTempList.clear();
 					
-				// SUB-BRANCH 若为注释行，则添加到临时注释列表中
+				// SUB-BRANCH 若当前行为注释行，则追加到临时注释列表中
 				} else {
 					commentsTempList.add(newItem.getItemDTO().getComment());
 					
@@ -226,9 +258,9 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 					ItemDTO updateItemDTO = ItemDTOWrapper.clone(newItem.getItemDTO());
 					updateItemDTO.setId(oldItemByLineNum.getItemDTO().getId());
 					changeWrapperSets.addUpdateItem(new ItemDTOWrapper(updateItemDTO));
-					handledIdSet.add(oldItemByLineNum.getItemDTO().getId());
+					handledIdSet.add(oldItemByLineNum.getItemDTO().getId()); // 将已处理的老数据行ID存入集合中
 					
-					// PART 其他情况，添加新增记录
+				// PART 其他情况，添加新增记录
 				} else {
 					changeWrapperSets.addCreateItem(newItem);
 					
@@ -248,19 +280,50 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 	
 	// ===== ===== ===== ===== [实例工具方法-构筑变更对象] ===== ===== ===== ===== //
 	
-	/** 构筑注释配置项对象 */
+	/**
+	 * 构筑注释配置项对象
+	 * @param id 配置ID
+	 * @param namespaceId 配置所属的命名空间ID
+	 * @param comment 配置行的注释内容
+	 * @param lineNum 配置行的行号，从1开始
+	 * @return {@code ItemDTO} 构筑结果
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	private ItemDTO buildCommentItem(Long id, Long namespaceId, String comment, int lineNum) {
 		return buildNormalItem(id, namespaceId, "", "", comment, lineNum);
 		
 	}
 	
-	/** 构筑空行配置项对象 */
+	/**
+	 * 构筑空行配置项对象
+	 * @param id 配置ID
+	 * @param namespaceId 配置所属的命名空间ID
+	 * @param lineNum 配置行的行号，从1开始
+	 * @return {@code ItemDTO} 构筑结果
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	private ItemDTO buildBlankItem(Long id, Long namespaceId, int lineNum) {
 		return buildNormalItem(id, namespaceId, "", "", "", lineNum);
 		
 	}
 	
-	/** 构筑配置项对象 */
+	/**
+	 * 构筑配置项对象
+	 * @param id 配置ID
+	 * @param namespaceId 配置所属的命名空间ID
+	 * @param key 配置项的Key
+	 * @param value 配置项的Value
+	 * @param comment 配置行的注释内容
+	 * @param lineNum 配置行的行号，从1开始
+	 * @return {@code ItemDTO} 构筑结果
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	private ItemDTO buildNormalItem(Long id, Long namespaceId, String key, String value, String comment, int lineNum) {
 		ItemDTO item = new ItemDTO(key, value, comment, lineNum);
 		item.setId(id);
@@ -271,13 +334,29 @@ public class PropertyResolverV2 implements ConfigTextResolver {
 	
 	// ===== ===== ===== ===== [静态工具方法] ===== ===== ===== ===== //
 	
-	/** 判断集合是否为空 */
+	/**
+	 * 判断集合是否为空
+	 * @param collection 目标集合
+	 * @return {@code boolean} 判断结果
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	public static boolean isEmpty(Collection<?> collection) {
 		return (collection == null) || collection.isEmpty();
 		
 	}
 	
-	/** 安全地从列表中获取元素，若获取不到则返回默认值 */
+	/**
+	 * 安全地从列表中获取元素，若获取不到则返回默认值
+	 * @param list 列表
+	 * @param index 序号
+	 * @param defaultValue 获取不到元素时返回的默认值
+	 * @return {@code E} 获取结果
+	 * @author ZhouYi
+	 * @date 2023/4/4 18:11
+	 * @note note
+	 */
 	public <E> E safelyGetFromList(List<E> list, int index, E defaultValue) {
 		if ((list == null) || list.isEmpty() || (index < 0) || (index >= list.size())) { return defaultValue; }
 		return list.get(index);
