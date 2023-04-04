@@ -29,7 +29,7 @@
                 <div class="form-group">
                     <label class="col-sm-2 control-label">{{'Component.ConfigItem.ItemValue' | translate }}</label>
                     <div class="col-sm-10" valdr-form-group>
-                        <textarea id="valueEditor" name="value" class="form-control" rows="6" tabindex="2"
+                        <textarea id="valueEditor" name="value" class="form-control resize-vertical-impt min-ht-100-impt" rows="6" tabindex="2"
                             ng-required="false" ng-model="item.value">
                             </textarea>
                         {{'Component.ConfigItem.ItemValueTips' | translate }} <a
@@ -40,13 +40,11 @@
                         <div class="bg-info" ng-bind-html="valueWithHiddenChars"
                             ng-show="showHiddenCharsContext && hiddenCharCounter > 0"></div>
                     </div>
-
-
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">{{'Component.ConfigItem.ItemComment' | translate }}</label>
                     <div class="col-sm-10" valdr-form-group>
-                        <textarea class="form-control" name="comment" ng-model="item.comment" tabindex="3" rows="2">
+                        <textarea class="form-control resize-vertical min-ht-150-impt" name="comment" ng-model="item.comment" tabindex="3" rows="2">
                         </textarea>
                     </div>
                 </div>
