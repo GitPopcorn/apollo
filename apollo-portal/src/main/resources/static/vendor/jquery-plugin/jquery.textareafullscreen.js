@@ -53,7 +53,7 @@
             $el.css({
                 'width': '100%',
                 'height': '100%',
-				'resize': 'none'
+                'resize': 'none'
             });
 
             // ESC = closes the fullscreen mode
@@ -141,14 +141,14 @@
     var transitions = function () {
 
             if (isFullscreen) {
-				$el.focus();
-				isFullscreen = false;
-				relocate($editor);
+                $el.focus();
+                isFullscreen = false;
+                relocate($editor);
             } else {
-				$el.focus();
-				$editor.css('opacity', 1);
-				isFullscreen = true;
-				maxRelocate($editor);
+                $el.focus();
+                $editor.css('opacity', 1);
+                isFullscreen = true;
+                maxRelocate($editor);
             }
 
             return;
