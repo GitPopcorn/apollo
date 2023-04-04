@@ -6,12 +6,14 @@ import com.ctrip.framework.apollo.common.dto.ItemChangeSets;
 import com.ctrip.framework.apollo.common.dto.ItemDTO;
 import com.ctrip.framework.apollo.common.dto.NamespaceDTO;
 import com.ctrip.framework.apollo.common.dto.ReleaseDTO;
+import com.ctrip.framework.apollo.common.entity.AppNamespace;
 import com.ctrip.framework.apollo.common.exception.BadRequestException;
 import com.ctrip.framework.apollo.common.utils.BeanUtils;
 import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI.ItemAPI;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI.NamespaceAPI;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI.ReleaseAPI;
+import com.ctrip.framework.apollo.portal.component.ItemChangeDiffer;
 import com.ctrip.framework.apollo.portal.environment.Env;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI;
@@ -24,7 +26,8 @@ import com.ctrip.framework.apollo.portal.spi.UserInfoHolder;
 import com.ctrip.framework.apollo.tracer.Tracer;
 import com.google.gson.Gson;
 import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -43,22 +46,29 @@ public class ItemService {
   private final AdminServiceAPI.NamespaceAPI namespaceAPI;
   private final AdminServiceAPI.ItemAPI itemAPI;
   private final AdminServiceAPI.ReleaseAPI releaseAPI;
+  private final AppNamespaceService appNamespaceService;
   private final ConfigTextResolver fileTextResolver;
   private final ConfigTextResolver propertyResolver;
+  private final ItemChangeDiffer itemChangeDiffer;
 
   public ItemService(
       final UserInfoHolder userInfoHolder,
       final NamespaceAPI namespaceAPI,
       final ItemAPI itemAPI,
       final ReleaseAPI releaseAPI,
+      final AppNamespaceService appNamespaceService,
       final @Qualifier("fileTextResolver") ConfigTextResolver fileTextResolver,
-      final @Qualifier("propertyResolver") ConfigTextResolver propertyResolver) {
+      final @Qualifier("propertyResolverV2") ConfigTextResolver propertyResolver,
+      final @Autowired ItemChangeDiffer itemChangeDiffer
+  ) {
     this.userInfoHolder = userInfoHolder;
     this.namespaceAPI = namespaceAPI;
     this.itemAPI = itemAPI;
     this.releaseAPI = releaseAPI;
+    this.appNamespaceService = appNamespaceService;
     this.fileTextResolver = fileTextResolver;
     this.propertyResolver = propertyResolver;
+    this.itemChangeDiffer = itemChangeDiffer;
   }
 
 
@@ -172,46 +182,36 @@ public class ItemService {
           "namespace:" + namespaceName + " not exist in env:" + env + ", cluster:" + clusterName);
     }
     long namespaceId = namespace.getId();
-
+    
+    AppNamespace appNamespace = appNamespaceService.findByAppIdAndName(appId, namespaceName);
+    if (appNamespace == null) {
+      throw new BadRequestException(
+          "namespace:" + namespaceName + " of application:" + appId + " not exist in env:" + env
+      );
+    }
+    
     Map<String, String> releaseItemDTOs = new HashMap<>();
     ReleaseDTO latestRelease = releaseAPI.loadLatestRelease(appId,env,clusterName,namespaceName);
     if (latestRelease != null) {
       releaseItemDTOs = gson.fromJson(latestRelease.getConfigurations(), GsonType.CONFIG);
     }
+    
     List<ItemDTO> baseItems = itemAPI.findItems(appId, env, clusterName, namespaceName);
-    Map<String, ItemDTO> oldKeyMapItem = BeanUtils.mapByKey("key", baseItems);
-    Map<String, ItemDTO> deletedItemDTOs = new HashMap<>();
-
-    //deleted items for comment
-    findDeletedItems(appId, env, clusterName, namespaceName).forEach(item -> {
-      deletedItemDTOs.put(item.getKey(),item);
-    });
-
-    ItemChangeSets changeSets = new ItemChangeSets();
-    AtomicInteger lineNum = new AtomicInteger(1);
-    releaseItemDTOs.forEach((key,value) -> {
-      ItemDTO oldItem = oldKeyMapItem.get(key);
-      if (oldItem == null) {
-        ItemDTO deletedItemDto = deletedItemDTOs.computeIfAbsent(key, k -> new ItemDTO());
-        changeSets.addCreateItem(buildNormalItem(0L, namespaceId,key,value,deletedItemDto.getComment(),lineNum.get()));
-      } else if (!oldItem.getValue().equals(value) || lineNum.get() != oldItem
-          .getLineNum()) {
-        changeSets.addUpdateItem(buildNormalItem(oldItem.getId(), namespaceId, key,
-            value, oldItem.getComment(), lineNum.get()));
-      }
-      oldKeyMapItem.remove(key);
-      lineNum.set(lineNum.get() + 1);
-    });
-    oldKeyMapItem.forEach((key, value) -> changeSets.addDeleteItem(oldKeyMapItem.get(key)));
+    List<ItemDTO> deletedItems = findDeletedItems(appId, env, clusterName, namespaceName);
+    
+    ItemChangeSets changeSets = itemChangeDiffer.diffItemChangeSetsForInvoking(
+            namespaceId, appNamespace.getFormat(), releaseItemDTOs, baseItems, deletedItems
+    );
+    
     changeSets.setDataChangeLastModifiedBy(userInfoHolder.getUser().getUserId());
-
+    
     updateItems(appId, env, clusterName, namespaceName, changeSets);
-
+    
     Tracer.logEvent(TracerEventType.MODIFY_NAMESPACE_BY_TEXT,
         String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
     Tracer.logEvent(TracerEventType.MODIFY_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
   }
-
+  
   public List<ItemDiffs> compare(List<NamespaceIdentifier> comparedNamespaces, List<ItemDTO> sourceItems) {
 
     List<ItemDiffs> result = new LinkedList<>();

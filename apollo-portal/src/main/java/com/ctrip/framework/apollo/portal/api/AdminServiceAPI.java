@@ -134,6 +134,24 @@ public class AdminServiceAPI {
   }
 
   @Service
+  public static class AppNamespaceAPI extends API {
+    
+    public List<AppNamespaceDTO> getAppNamespaces(String appId, Env env) {
+        AppNamespaceDTO[] appNamespaceDTOs = restTemplate.get(env, "apps/{appId}/appnamespaces", AppNamespaceDTO[].class, appId);
+        return Arrays.asList(appNamespaceDTOs);
+    }
+    
+    public AppNamespaceDTO findAppNamespace(String appId, Env env, String namespaceName) {
+      // Please use {@link com.ctrip.framework.apollo.portal.service.AppNamespaceService.findByAppIdAndName} instead
+      return this.getAppNamespaces(appId, env).stream().filter(appNamespaceDTO -> appNamespaceDTO.getName().equals(namespaceName))
+              .findFirst()
+              .orElse(null)
+      ;
+    }
+    
+  }
+
+  @Service
   public static class ItemAPI extends API {
 
     public List<ItemDTO> findItems(String appId, Env env, String clusterName, String namespaceName) {
