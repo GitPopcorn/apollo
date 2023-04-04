@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: ${apollo_profile}
+    active: ${apollo_profile_assembly}
 
 logging:
   file: /opt/logs/100003171/apollo-assembly.log
