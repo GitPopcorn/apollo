@@ -823,3 +823,114 @@ table th {
     line-height: 34px;
     font-size: 14px;
 }
+
+.resize-vertical {
+    resize: vertical;
+}
+
+.resize-horizontal {
+    resize: horizontal;
+}
+
+.resize-both {
+    resize: both;
+}
+
+.resize-none {
+    resize: none;
+}
+
+.resize-vertical-impt {
+    resize: vertical !important;
+}
+
+.resize-horizontal-impt {
+    resize: horizontal !important;
+}
+
+.resize-both-impt {
+    resize: both !important;
+}
+
+.resize-none-impt {
+    resize: none !important;
+}
+
+.ht-100 {
+    height: 100px;
+}
+.ht-150 {
+    height: 150px;
+}
+
+.ht-200 {
+    height: 200px;
+}
+
+.ht-250 {
+    height: 250px;
+}
+
+.ht-300 {
+    height: 300px;
+}
+
+.min-ht-100 {
+    min-height: 100px;
+}
+
+.min-ht-150 {
+    min-height: 150px;
+}
+
+.min-ht-200 {
+    min-height: 200px;
+}
+
+.min-ht-250 {
+    min-height: 250px;
+}
+
+.min-ht-300 {
+    min-height: 300px;
+}
+
+.ht-100-impt {
+    height: 100px !important;
+}
+
+.ht-150-impt {
+    height: 150px !important;
+}
+
+.ht-200-impt {
+    height: 200px !important;
+}
+
+.ht-250-impt {
+    height: 250px !important;
+}
+
+.ht-300-impt {
+    height: 300px !important;
+}
+
+.min-ht-100-impt {
+    min-height: 100px !important;
+}
+
+.min-ht-150-impt {
+    min-height: 150px !important;
+}
+
+.min-ht-200-impt {
+    min-height: 200px !important;
+}
+
+.min-ht-250-impt {
+    min-height: 250px !important;
+}
+
+.min-ht-300-impt {
+    min-height: 300px !important;
+}
